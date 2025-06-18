@@ -1,0 +1,70 @@
+
+---
+title: "Human Activity Recognition Using Accelerometer Data"
+author: "Shraavan kumar reddy"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(caret)
+library(randomForest)
+library(rpart)
+library(e1071)
+```
+
+## Introduction
+
+This project aims to predict the manner in which participants performed weight lifting exercises based on sensor data from accelerometers. The data is collected from devices on the belt, forearm, arm, and dumbbell of six participants. The target variable is `classe`, which indicates the correct or incorrect performance of the exercise.
+
+## Data Loading and Cleaning
+
+```{r}
+# Load data
+train_url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+test_url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+training <- read.csv(url(train_url), na.strings = c("NA", "", "#DIV/0!"))
+testing <- read.csv(url(test_url), na.strings = c("NA", "", "#DIV/0!"))
+
+# Clean data
+training <- training[, colSums(is.na(training)) == 0]
+training <- training[, -c(1:5)]
+testing <- testing[, colnames(testing) %in% colnames(training)]
+```
+
+## Partitioning the Data
+
+```{r}
+set.seed(123)
+inTrain <- createDataPartition(training$classe, p = 0.7, list = FALSE)
+trainSet <- training[inTrain, ]
+testSet <- training[-inTrain, ]
+```
+
+## Model Training
+
+We use a Random Forest model with 5-fold cross-validation.
+
+```{r}
+control <- trainControl(method = "cv", number = 5)
+model_rf <- train(classe ~ ., data = trainSet, method = "rf", trControl = control)
+```
+
+## Model Evaluation
+
+```{r}
+predictions <- predict(model_rf, testSet)
+confusionMatrix(predictions, testSet$classe)
+```
+
+## Final Prediction on Test Cases
+
+```{r}
+final_predictions <- predict(model_rf, testing)
+final_predictions
+```
+
+## Conclusion
+
+The random forest model achieved excellent performance, with an out-of-sample accuracy close to 99%. This model is robust for predicting the quality of exercise movements using sensor data. This approach can be extended to other human activity recognition tasks using wearable devices.
